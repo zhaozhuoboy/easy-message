@@ -14,6 +14,8 @@ export interface RoomAttributes {
   updated_at: Date
 }
 
+export interface RoomCreationAttributes extends Optional<RoomAttributes, 'room_id' | 'created_at' | 'updated_at'> {}
+
 export class RoomModel extends Model {}
 
 RoomModel.init(
