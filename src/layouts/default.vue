@@ -4,7 +4,7 @@
     :native-scrollbar="false"
     :content-class="$style['layout-content']"
   >
-    <NLayoutHeader :class="$style['layout-header']">
+    <NLayoutHeader v-if="useHeader" :class="$style['layout-header']">
       <Header />
     </NLayoutHeader>
     <NLayoutContent>
@@ -24,6 +24,12 @@ import Header from '../components/common/header/Index.vue'
 import Footer from '../components/common/footer/Footer.vue'
 export default {
   name: 'layout',
+  props: {
+    useHeader: {
+      type: Boolean,
+      default: true
+    }
+  },
   components: {
     NLayout,
     NLayoutContent,
@@ -31,6 +37,9 @@ export default {
     NLayoutFooter,
     Header,
     Footer
+  },
+  setup (props) {
+    console.log('layout props', props)
   }
 }
 </script>

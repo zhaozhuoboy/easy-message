@@ -1,4 +1,4 @@
-import { Model, DataTypes, Optional } from 'sequelize'
+import { Model, DataTypes, type Optional } from 'sequelize'
 import { sequelize } from '../config'
 
 // 房间接口定义

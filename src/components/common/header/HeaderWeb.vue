@@ -2,14 +2,14 @@
   <div :class="$style['header']">
     <div :class="$style['inner']">
       <div :class="$style['logo']">
-        Nuxt + Naive + Pinia
+        Easy Message
       </div>
       <nav :class="$style['nav-wrap']">
       </nav>
 
-      <div :class="$style['account']">
+      <!-- <div :class="$style['account']">
         登录/注册
-      </div>
+      </div> -->
     </div>
   </div>
 </template>

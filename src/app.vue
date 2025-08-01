@@ -20,14 +20,12 @@ export default {
   setup () {
     useHead({
       titleTemplate: (titleChunk) => {
-        console.log('titleChunk', titleChunk)
-        return titleChunk ? `${titleChunk} - Nuxt Start` : 'Nuxt Start';
+        return titleChunk ? `${titleChunk} - Easy Message` : '';
       }
     })
 
     const baseStore = useBaseStore()
     const theme = computed(() => baseStore.theme)
-
     watch(() => theme.value, (val) => {
       console.log(
         'theme change',
@@ -79,7 +77,7 @@ export default {
     })
 
     return {
-      theme
+      theme,
     }
   }
 }
