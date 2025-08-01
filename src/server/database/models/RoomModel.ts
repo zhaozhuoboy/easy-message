@@ -14,19 +14,7 @@ export interface RoomAttributes {
   updated_at: Date
 }
 
-export interface RoomCreationAttributes extends Optional<RoomAttributes, 'room_id' | 'created_at' | 'updated_at'> {}
-
-export class RoomModel extends Model<RoomAttributes, RoomCreationAttributes> implements RoomAttributes {
-  public id!: number
-  public room_id!: number
-  public room_name?: string
-  public room_type?: string
-  public room_status?: string
-  public is_private?: boolean
-  public password?: string
-  public created_at!: Date
-  public updated_at!: Date
-}
+export class RoomModel extends Model {}
 
 RoomModel.init(
   {
