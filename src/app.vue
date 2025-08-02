@@ -1,21 +1,24 @@
 <template>
   <NConfigProvider :theme="theme">
-    <div>
-      <NuxtLayout>
-        <NuxtPage />
-      </NuxtLayout>
-    </div>
+    <NMessageProvider>
+      <div>
+        <NuxtLayout>
+          <NuxtPage />
+        </NuxtLayout>
+      </div>
+    </NMessageProvider>
   </NConfigProvider>
 </template>
 <script>
 import { watch } from 'vue'
-import { NConfigProvider } from 'naive-ui'
+import { NConfigProvider, NMessageProvider } from 'naive-ui'
 import { useBaseStore } from '@/store/base'
 
 export default {
   name: 'NuxtApp',
   components: {
-    NConfigProvider
+    NConfigProvider,
+    NMessageProvider
   },
   setup () {
     useHead({

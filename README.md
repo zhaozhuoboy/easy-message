@@ -1,6 +1,6 @@
 # Nuxt 3 Naive UI Tailwind CSS Starter
 
-## Setup
+## 安装依赖
 
 
 ```bash
@@ -17,7 +17,11 @@ yarn install
 bun install
 ```
 
-## Development Server
+## 复制 .env.example -->  .env
+
+修改数据库配置
+
+## 启动开发服务
 
 Start the development server on `http://localhost:6780`:
 

@@ -7,7 +7,7 @@
         </template>
         <div :class="$style['private']" v-if="isPrivate">
           <p>房间密码</p>
-          <NInput placeholder="请输入房间密码" />
+          <NInput type="password" placeholder="请输入房间密码" v-model:value="state.password" />
         </div>
 
         <div :class="$style['action']">
@@ -21,7 +21,9 @@
 </template>
 
 <script>
-import { NCard, NSwitch, NInput, NButton } from 'naive-ui'
+import { NCard, NSwitch, NInput, NButton, useMessage } from 'naive-ui'
+import { getRandomName } from '@/utils'
+import { createRoom } from '@/service/room.service'
 export default {
   name: 'page-index',
   components: {
@@ -35,6 +37,8 @@ export default {
       title: '首页',
     })
 
+    const router = useRouter()
+    const message = useMessage()
     const isPrivate = ref(false)
     const state = reactive({
       isPrivate: false,
@@ -42,12 +46,30 @@ export default {
       createLock: false,
     })
 
-    const handleCreateRoom = () => {
+    const handleCreateRoom = async () => {
       state.createLock = true
-
-      setTimeout(() => {
-        state.createLock = false
-      }, 1000)
+      // 创建房间
+      const name = getRandomName()
+      console.log(name)
+      // 创建房间
+      createRoom({
+        password: state.password,
+      }).then(res => {
+        console.log(res)
+        setTimeout(() => {
+          state.createLock = false
+          message.success('创建成功')
+          // 跳转房间
+          router.push({
+            path: `/room/${res.room_id}`,
+            query: {
+              user: name
+            }
+          })
+        }, 500)
+      }).catch(err => {
+        message.error(err.message)
+      })
     }
 
     return {

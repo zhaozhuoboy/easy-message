@@ -13,7 +13,7 @@ export const initDatabase = async () => {
 
     // 开发环境下同步数据库结构
     if (process.env.NODE_ENV === 'development') {
-      await syncAllModels(false) // false 表示不强制重建表
+      await syncAllModels(true) // false 表示不强制重建表
     }
 
     console.log('✅ 数据库初始化完成')

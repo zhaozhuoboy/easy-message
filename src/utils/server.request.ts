@@ -51,7 +51,7 @@ export const serverFetch = (option: {
 
     useFetch(url, opt).then(response => {
       const { data: res, error, clear, refresh, status } = response
-
+      console.log(status.value)
       if (status.value === 'success') {
         const { code, data, error = {}, msg } = res.value as ServiceResponse
         let result

@@ -10,6 +10,7 @@ export interface RoomAttributes {
   room_status?: string
   is_private?: boolean // 是否私密
   password?: string // 密码
+  expired_time?: Date // 过期时间，为创建时间加 24 小时
   created_at: Date
   updated_at: Date
 }
@@ -54,6 +55,15 @@ RoomModel.init(
       comment: '密码',
       get() {
         return null;
+      }
+    },
+    expired_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '房间失效时间',
+      get() {
+        const rawValue = this.getDataValue('expired_time');
+        return rawValue ? new Date(rawValue).getTime() : null;
       }
     },
     created_at: {

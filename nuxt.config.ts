@@ -24,7 +24,9 @@ export default defineNuxtConfig({
   },
 
   srcDir: 'src/',
-  css: ['~/assets/css/main.scss'],
+  css: [
+    '~/assets/css/main.scss',
+  ],
 
   postcss: {
     plugins: {

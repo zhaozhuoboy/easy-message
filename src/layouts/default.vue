@@ -71,6 +71,7 @@ export default {
 
 .inner {
   max-width: 1200px;
+  min-height: 100vh;
   margin: auto;
 }
 
