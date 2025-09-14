@@ -33,8 +33,17 @@ function installCronTask() {
       console.log('✅ 创建日志目录')
     }
     
-    // 创建 cron 任务 - 使用相对路径和动态目录
-    const cronJob = `*/10 * * * * cd "${PROJECT_DIR}" && npm run cleanup:run >> "${LOG_FILE}" 2>&1`
+    // 获取 Node.js 路径
+    let nodePath = ''
+    try {
+      nodePath = execSync('which node', { encoding: 'utf8' }).trim()
+    } catch (error) {
+      console.error('❌ 找不到 Node.js 路径')
+      return
+    }
+    
+    // 创建 cron 任务 - 使用 Node.js 直接运行脚本（测试模式：每2分钟）
+    const cronJob = `*/2 * * * * cd "${PROJECT_DIR}" && "${nodePath}" scripts/smart-cleanup.js >> "${LOG_FILE}" 2>&1`
     
     // 检查是否已存在相同的任务
     let existingCron = ''
@@ -44,7 +53,7 @@ function installCronTask() {
       // 没有现有的 crontab
     }
     
-    if (existingCron.includes('cleanup:run')) {
+    if (existingCron.includes('smart-cleanup.js')) {
       console.log('⚠️ 定时任务已存在')
       return
     }
@@ -77,10 +86,10 @@ function uninstallCronTask() {
       return
     }
     
-    // 过滤掉包含 cleanup:run 的行
+    // 过滤掉包含 smart-cleanup.js 的行
     const lines = existingCron.split('\n')
     const filteredLines = lines.filter(line => 
-      !line.includes('cleanup:run') && line.trim() !== ''
+      !line.includes('smart-cleanup.js') && line.trim() !== ''
     )
     
     if (filteredLines.length === 0) {
@@ -135,7 +144,7 @@ function showCronStatus() {
 function testCleanupScript() {
   try {
     console.log('🧪 测试清理脚本...')
-    execSync('npm run cleanup:run', { 
+    execSync('node scripts/smart-cleanup.js', { 
       cwd: PROJECT_DIR,
       stdio: 'inherit'
     })

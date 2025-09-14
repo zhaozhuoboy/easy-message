@@ -116,7 +116,7 @@ async function cleanupExpiredRooms() {
     console.log('🔍 开始扫描过期房间...')
     
     const now = new Date()
-    console.log(`⏰ 当前时间: ${now.toISOString()}`)
+    console.log(`⏰ 当前时间: ${now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`)
     
     // 查询过期房间
     const expiredRooms = await RoomModel.findAll({
