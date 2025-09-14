@@ -7,7 +7,13 @@
     "dev": "nuxt dev --host",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "cleanup:run": "node scripts/smart-cleanup.js && echo '清理完成'",
+    "scheduler:install": "node scripts/scheduler-manager.js install",
+    "scheduler:uninstall": "node scripts/scheduler-manager.js uninstall",
+    "scheduler:status": "node scripts/scheduler-manager.js status",
+    "scheduler:test": "node scripts/scheduler-manager.js test",
+    "scheduler:deploy": "./scripts/deploy-scheduler.sh"
   },
   "author": "zhaozhuo",
   "homepage": "",

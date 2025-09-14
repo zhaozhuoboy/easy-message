@@ -1,4 +1,4 @@
-// import { Op } from 'sequelize'
+import { Op } from 'sequelize'
 import { RoomModel, RoomCreationAttributes } from '../models/RoomModel'
 
 export class RoomService {
@@ -35,6 +35,66 @@ export class RoomService {
       return await RoomModel.findOne({ where: { room_id: roomId } })
     } catch (error) {
       console.error('查找房间失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 删除过期的房间
+   * @returns 删除的房间数量
+   */
+  static async deleteExpiredRooms(): Promise<number> {
+    try {
+      const now = new Date()
+      
+      // 查找所有过期的房间
+      const expiredRooms = await RoomModel.findAll({
+        where: {
+          expired_time: {
+            [Op.lt]: now // 过期时间小于当前时间
+          }
+        }
+      })
+
+      if (expiredRooms.length === 0) {
+        console.log('📋 没有发现过期的房间')
+        return 0
+      }
+
+      // 删除过期房间
+      const deletedCount = await RoomModel.destroy({
+        where: {
+          expired_time: {
+            [Op.lt]: now
+          }
+        }
+      })
+
+      console.log(`🗑️ 已删除 ${deletedCount} 个过期房间`)
+      return deletedCount
+    } catch (error) {
+      console.error('❌ 删除过期房间失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 获取过期房间数量（用于监控）
+   * @returns 过期房间数量
+   */
+  static async getExpiredRoomsCount(): Promise<number> {
+    try {
+      const now = new Date()
+      const count = await RoomModel.count({
+        where: {
+          expired_time: {
+            [Op.lt]: now
+          }
+        }
+      })
+      return count
+    } catch (error) {
+      console.error('❌ 获取过期房间数量失败:', error)
       throw error
     }
   }

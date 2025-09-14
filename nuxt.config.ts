@@ -9,6 +9,13 @@ const prod = process.env.BUILD_ENV === 'prod'
 const isDev = process.env.NODE_ENV !== 'production'
 
 export default defineNuxtConfig({
+  runtimeConfig: {
+    // 定时任务配置
+    scheduler: {
+      enabled: true,
+      type: 'internal' // internal, external, cron
+    }
+  },
   devtools: { enabled: true },
 
   devServer: {

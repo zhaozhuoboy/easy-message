@@ -1,4 +1,5 @@
 import { initializeModels, syncAllModels } from './models'
+import { SchedulerService } from '../services/SchedulerService'
 
 /**
  * 初始化数据库
@@ -15,6 +16,9 @@ export const initDatabase = async () => {
     if (process.env.NODE_ENV === 'development') {
       await syncAllModels(false) // false 表示不强制重建表，保留现有数据
     }
+
+    // 启动定时任务
+    SchedulerService.startAllTasks()
 
     console.log('✅ 数据库初始化完成')
     return true
