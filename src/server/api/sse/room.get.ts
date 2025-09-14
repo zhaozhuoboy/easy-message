@@ -142,6 +142,20 @@ export default defineEventHandler(async (event) => {
     }
   });
 
+  // 启动心跳定时器
+  const heartbeatTimer = setInterval(() => {
+    if (clients.has(clientId)) {
+      sendToClient(clientId, {
+        type: 'heartbeat',
+        data: {
+          timestamp: new Date().toISOString()
+        }
+      });
+    } else {
+      clearInterval(heartbeatTimer);
+    }
+  }, 60000); // 每60秒发送一次心跳
+
   // 通知房间内其他用户有新用户加入，并发送更新后的用户列表
   broadcastToRoom(roomIdStr, {
     type: 'room:user:enter',
