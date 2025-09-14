@@ -22,7 +22,10 @@ export default defineEventHandler(async (event) => {
     const room = roomInfo.get();
     const res = {
       room_id: room.room_id,
-      is_private: room.is_private
+      is_private: room.is_private,
+      expired_time: room.expired_time,
+      room_name: room.room_name,
+      room_type: room.room_type
     }
     return {
       code: 0,

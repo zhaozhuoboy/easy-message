@@ -9,7 +9,14 @@ export class RoomService {
    */
   static async createRoom(roomData: RoomCreationAttributes): Promise<RoomModel> {
     try {
-      const room = await RoomModel.create(roomData)
+      // 设置房间过期时间为创建时间加24小时
+      const expiredTime = new Date()
+      expiredTime.setHours(expiredTime.getHours() + 24)
+      
+      const room = await RoomModel.create({
+        ...roomData,
+        expired_time: expiredTime
+      })
       console.log(room.get())
       return room
     } catch (error) {

@@ -1,12 +1,30 @@
 <template>
   <NuxtLayout :useHeader="false">
-    <div :class="$style['room-info']">
-      <div :class="$style['room-id']">
-        房间ID <span>{{ roomInfo.roow_id || route.params.roomId }}</span>
+    <!-- 房间加载中 -->
+    <div v-if="roomStatus.loading" :class="$style['room-loading']">
+      <div :class="$style['loading-content']">
+        <div :class="$style['loading-spinner']"></div>
+        <p>正在加载房间信息...</p>
       </div>
-      <div :class="$style['expired-time']">
-        过期时间 <span>- -</span>
-      </div>
+    </div>
+    
+    <!-- 房间不存在或错误 -->
+    <RoomError 
+      v-else-if="roomStatus.error"
+      :message="roomStatus.errorMessage"
+      @go-home="goToHome"
+      @retry="getRoomInfo"
+    />
+    
+    <!-- 正常房间内容 -->
+    <div v-else-if="roomStatus.success">
+      <div :class="$style['room-info']">
+        <div :class="$style['room-id']">
+          房间ID <span>{{ roomInfo.room_id || route.params.roomId }}</span>
+        </div>
+        <div :class="$style['expired-time']">
+          过期时间 <span :class="$style['time-display']">{{ formatExpiredTime }}</span>
+        </div>
     <!-- 重连状态提示 - 固定在页面顶部 -->
     <div v-if="isReconnecting" :class="$style['reconnect-overlay']">
       <div :class="$style['reconnect-status']">
@@ -19,7 +37,18 @@
     </div>
     <NLayout :class="$style['room-layout']" has-sider sider-placement="right">
       <NLayoutContent :content-class="$style['message-content']" :native-scrollbar="false" content-style="padding: 20px;">
-        <div :class="$style['message-list']">
+          <div :class="$style['message-list']" data-message-list @scroll="handleScroll">
+            <!-- 加载历史消息的提示 -->
+            <div v-if="messagePagination.loading && messagePagination.oldestMessageId" :class="$style['loading-indicator']">
+              <div :class="$style['loading-spinner']"></div>
+              <span>加载历史消息中...</span>
+            </div>
+            
+            <!-- 没有更多历史消息的提示 -->
+            <div v-else-if="!messagePagination.hasMore && messagePagination.oldestMessageId" :class="$style['no-more-indicator']">
+              <span>没有更多历史消息了</span>
+            </div>
+            
           <MessageList :list="messageList" />
         </div>
         <div :class="$style['message-input']">
@@ -55,6 +84,7 @@
         </div>
       </NLayoutSider>
     </NLayout>
+    </div>
   </NuxtLayout>
   
 </template>
@@ -62,8 +92,10 @@
 <script setup>
 import { NLayout, NLayoutContent, NLayoutSider, NInput, NButton } from 'naive-ui'
 import MessageList from './MessageList.vue'
+import RoomError from '@/components/room/RoomError.vue'
 import { guid, getRandomName } from '@/utils'
 import { serverFetch } from '@/utils/server.request'
+import ajax from '@/utils/http'
 const route = useRoute()
 
 definePageMeta({
@@ -92,6 +124,7 @@ const originalTitle = ref('')
 const titleBlinkInterval = ref(null)
 const isPageVisible = ref(true)
 
+
 // 在服务器端 设置 seo 数据
 if (import.meta.server) {
   useSeoMeta({
@@ -102,6 +135,23 @@ if (import.meta.server) {
 const roomInfo = ref({})
 const inputValue = ref('')
 const messageList = ref([])
+
+// 房间状态管理
+const roomStatus = ref({
+  loading: true,    // 加载中
+  success: false,   // 加载成功
+  error: false,     // 加载失败
+  errorMessage: ''  // 错误信息
+})
+
+// 消息分页相关状态
+const messagePagination = ref({
+  limit: 20,
+  total: 0,
+  hasMore: true,
+  loading: false,
+  oldestMessageId: null // 记录最早的消息ID，用于加载更早的消息
+})
 
 
 const sendMessage = async () => {
@@ -116,36 +166,202 @@ const sendMessage = async () => {
   }
 
   try {
-    const response = await $fetch('/api/room/message', {
+    const response = await ajax({
+      url: '/api/room/message',
       method: 'POST',
-      body: postData
+      data: postData
     });
     
-    if (response.code === 0) {
-      // 消息发送成功，添加到本地消息列表（不通过SSE接收自己的消息）
-      messageList.value.push({
-        ...response.data,
+    // 消息发送成功，添加到本地消息列表末尾（不通过SSE接收自己的消息）
+    const newMessage = {
+      ...response,
         isOwn: true
-      });
-      inputValue.value = '';
-    } else {
-      console.error('发送消息失败:', response.message);
     }
+    messageList.value.push(newMessage);
+    inputValue.value = '';
+    
+    // 更新总消息数
+    messagePagination.value.total += 1
+    
+    // 滚动到底部显示新消息
+    nextTick(() => {
+      scrollToBottom()
+    })
   } catch (error) {
     console.error('发送消息失败:', error);
   }
 }
-const getRoomInfo = () => {
-  serverFetch({
+const getRoomInfo = async () => {
+  try {
+    roomStatus.value.loading = true
+    roomStatus.value.error = false
+    roomStatus.value.success = false
+    
+    const res = await ajax({
     url: '/api/room/find',
-    method: 'post',
-    data: {
-      room_id: route.params.roomId
-    }
-  }).then(res => {
+      method: 'POST',
+      data: {
+        room_id: route.params.roomId
+      }
+    })
+    
     console.log('room info', res)
+    
+    // 检查房间是否存在
+    if (!res || !res.room_id) {
+      throw new Error('房间不存在或已被删除')
+    }
+    
     roomInfo.value = res
+    roomStatus.value.success = true
+    roomStatus.value.loading = false
+  } catch (error) {
+    console.error('获取房间信息失败:', error)
+    roomStatus.value.error = true
+    roomStatus.value.success = false
+    roomStatus.value.loading = false
+    roomStatus.value.errorMessage = error.message || '房间不存在或已被删除'
+  }
+}
+
+// 返回首页
+const goToHome = () => {
+  navigateTo('/')
+}
+
+// 格式化过期时间显示
+const formatExpiredTime = computed(() => {
+  console.log('roomInfo.value:', roomInfo.value)
+  console.log('expired_time:', roomInfo.value.expired_time)
+  
+  if (!roomInfo.value.expired_time) {
+    return '- -'
+  }
+  
+  const expiredTime = new Date(roomInfo.value.expired_time)
+  const formattedTime = expiredTime.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
   })
+  
+  console.log('formatted expired time:', formattedTime)
+  return formattedTime
+})
+
+
+// 获取房间最新消息
+const getLatestMessages = async () => {
+  try {
+    messagePagination.value.loading = true
+    
+    const response = await ajax({
+      url: '/api/room/messages',
+      method: 'GET',
+      data: {
+        roomId: route.params.roomId,
+        type: 'latest',
+        limit: messagePagination.value.limit
+      }
+    })
+    
+    // 将获取到的消息添加到列表（最新消息在底部）
+    const newMessages = response.messages.map(msg => ({
+      ...msg,
+      isOwn: msg.uid === uid
+    }))
+    
+    messageList.value = newMessages
+    messagePagination.value.total = response.pagination.total
+    messagePagination.value.hasMore = response.pagination.hasMore
+    
+    // 设置最早的消息ID，用于后续加载历史消息
+    if (newMessages.length > 0) {
+      messagePagination.value.oldestMessageId = newMessages[0].id
+    }
+    
+    console.log('获取到最新消息:', newMessages.length, '条')
+    
+    // 滚动到底部显示最新消息
+    nextTick(() => {
+      scrollToBottom()
+    })
+  } catch (error) {
+    console.error('获取消息失败:', error)
+  } finally {
+    messagePagination.value.loading = false
+  }
+}
+
+// 获取历史消息
+const getHistoryMessages = async () => {
+  if (!messagePagination.value.hasMore || messagePagination.value.loading || !messagePagination.value.oldestMessageId) {
+    return
+  }
+  
+  try {
+    messagePagination.value.loading = true
+    
+    const response = await ajax({
+      url: '/api/room/messages',
+      method: 'GET',
+      data: {
+        roomId: route.params.roomId,
+        type: 'history',
+        beforeId: messagePagination.value.oldestMessageId,
+        limit: messagePagination.value.limit
+      }
+    })
+    
+    if (response.messages && response.messages.length > 0) {
+      // 将历史消息添加到列表开头
+      const historyMessages = response.messages.map(msg => ({
+        ...msg,
+        isOwn: msg.uid === uid
+      }))
+      
+      messageList.value = [...historyMessages, ...messageList.value]
+      
+      // 更新最早的消息ID
+      messagePagination.value.oldestMessageId = historyMessages[0].id
+      
+      // 检查是否还有更多历史消息
+      messagePagination.value.hasMore = historyMessages.length === messagePagination.value.limit
+      
+      console.log('获取到历史消息:', historyMessages.length, '条')
+    } else {
+      // 没有更多历史消息
+      messagePagination.value.hasMore = false
+      console.log('没有更多历史消息')
+    }
+  } catch (error) {
+    console.error('获取历史消息失败:', error)
+  } finally {
+    messagePagination.value.loading = false
+  }
+}
+
+// 滚动到底部
+const scrollToBottom = () => {
+  const messageListElement = document.querySelector('[data-message-list]')
+  if (messageListElement) {
+    messageListElement.scrollTop = messageListElement.scrollHeight
+  }
+}
+
+// 处理滚动事件，实现向上滚动加载历史消息
+const handleScroll = (event) => {
+  const element = event.target
+  const scrollTop = element.scrollTop
+  const threshold = 100 // 距离顶部100px时开始加载
+  
+  // 如果滚动到顶部附近且有更多历史消息，则加载更多
+  if (scrollTop <= threshold && messagePagination.value.hasMore && !messagePagination.value.loading) {
+    console.log('触发加载历史消息')
+    getHistoryMessages()
+  }
 }
 
 const initUserList = () => {
@@ -308,10 +524,19 @@ const connectRoom = () => {
           case 'room:message':
             // 接收新消息（只接收其他用户的消息，自己的消息通过sendMessage直接添加）
             if (payload.data.uid !== uid) {
-              messageList.value.push({
+              const newMessage = {
                 ...payload.data,
                 isOwn: false
-              });
+              }
+              messageList.value.push(newMessage);
+              
+              // 更新总消息数
+              messagePagination.value.total += 1
+              
+              // 滚动到底部显示新消息
+              nextTick(() => {
+                scrollToBottom()
+              })
               
               // 如果页面不可见，开始标题闪烁
               if (!isPageVisible.value) {
@@ -338,9 +563,9 @@ const connectRoom = () => {
   }
 }
 
-getRoomInfo()
+// getRoomInfo() // 将在 onMounted 中调用
 
-onMounted(() => {
+onMounted(async () => {
   // 为每个标签页生成唯一的用户ID，避免多标签页冲突
   uid = guid()
   console.log('当前用户ID:', uid)
@@ -369,7 +594,18 @@ onMounted(() => {
   isPageVisible.value = !document.hidden
 
   initUserList()
-  connectRoom()
+  
+  // 获取房间信息
+  await getRoomInfo()
+  
+  // 只有房间信息加载成功后才加载消息和连接SSE
+  if (roomStatus.value.success) {
+    // 获取房间最新消息
+    await getLatestMessages()
+    
+    // 连接SSE
+    connectRoom()
+  }
 })
 
 onBeforeUnmount(() => {
@@ -464,6 +700,45 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 20px;
+  position: relative;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  color: #666;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(102, 102, 102, 0.2);
+  border-top: 2px solid #666;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.no-more-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: #999;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .message-input {
@@ -493,6 +768,15 @@ onBeforeUnmount(() => {
   margin-top: 12px;
   line-height: 1;
   font-size: 14px;
+}
+
+.time-display {
+  font-weight: 600;
+  color: #1890ff;
+  padding: 2px 8px;
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(24, 144, 255, 0.2);
 }
 
 .reconnect-overlay {
@@ -547,4 +831,33 @@ onBeforeUnmount(() => {
     transform: scale(1.02);
   }
 }
+
+/* 房间加载中样式 */
+.room-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.loading-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.loading-content p {
+  margin: 0;
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+}
+
 </style>

@@ -1,15 +1,27 @@
 import { sequelize } from '../config'
 import { RoomModel } from './RoomModel'
+import { MessageModel } from './MessageModel'
 
 // 导出所有模型
-export { RoomModel }
+export { RoomModel, MessageModel }
 export { sequelize }
 
 // 定义模型关联关系
 export const setupAssociations = () => {
-  // 在这里可以定义模型之间的关联关系
-  // 例如：User.hasMany(Post)
-  // 例如：Post.belongsTo(User)
+  // 房间与消息的关联关系
+  // 一个房间可以有多个消息
+  RoomModel.hasMany(MessageModel, {
+    foreignKey: 'room_id',
+    sourceKey: 'room_id',
+    as: 'messages'
+  })
+  
+  // 消息属于房间
+  MessageModel.belongsTo(RoomModel, {
+    foreignKey: 'room_id',
+    targetKey: 'room_id',
+    as: 'room'
+  })
   
   console.log('✅ 模型关联关系设置完成')
 }

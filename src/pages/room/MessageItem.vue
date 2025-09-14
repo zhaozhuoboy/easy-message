@@ -46,6 +46,8 @@ const props = defineProps({
   padding: 10px;
   border-radius: 0 8px 0 8px;
   background: #e03810;
+  word-wrap: break-word;
+  white-space: break-spaces;
   color: #FFF;
 }
 
