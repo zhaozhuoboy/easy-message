@@ -18,7 +18,7 @@ mkdir -p "$LOG_DIR"
 NODE_PATH=$(which node)
 
 # 创建 cron 任务 - 使用 Node.js 直接运行脚本（测试模式：每2分钟）
-CRON_JOB="*/2 * * * * cd \"$PROJECT_DIR\" && \"$NODE_PATH\" scripts/smart-cleanup.js >> \"$LOG_DIR/cleanup.log\" 2>&1"
+CRON_JOB="*/10 * * * * cd \"$PROJECT_DIR\" && \"$NODE_PATH\" scripts/smart-cleanup.js >> \"$LOG_DIR/cleanup.log\" 2>&1"
 
 # 检查是否已存在相同的任务
 if crontab -l 2>/dev/null | grep -q "smart-cleanup.js"; then

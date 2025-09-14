@@ -65,9 +65,13 @@ export default defineEventHandler(async (event) => {
     }
   } catch (error) {
     console.error('管理操作失败:', error)
+    let errorMessage = '操作失败'
+    if (error instanceof Error) {
+      errorMessage = error.message || errorMessage
+    }
     return {
       code: -1,
-      message: error.message || '操作失败',
+      message: errorMessage,
       data: null
     }
   }
