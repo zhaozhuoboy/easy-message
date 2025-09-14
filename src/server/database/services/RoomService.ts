@@ -23,7 +23,7 @@ export class RoomService {
    * @param roomId 房间ID
    * @returns 房间
    */
-  static async findByRoomId(roomId: number): Promise<RoomModel | null> {
+  static async findByRoomId(roomId: string): Promise<RoomModel | null> {
     try {
       return await RoomModel.findOne({ where: { room_id: roomId } })
     } catch (error) {

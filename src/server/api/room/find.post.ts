@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     }
   }
   try {
-    const roomInfo = await RoomService.findByRoomId(body.room_id)
+    const roomInfo = await RoomService.findByRoomId(String(body.room_id))
     if (!roomInfo) {
       return {
         code: -2001,
